@@ -33,7 +33,7 @@ func checkDownload(c *gin.Context) {
 
 		fmt.Printf("fileDetail %s\n", fileDetail)
 		c.JSON(http.StatusOK, gin.H{
-			"status": fileDetail,
+			"data": fileDetail,
 		})
 		return err
 	})

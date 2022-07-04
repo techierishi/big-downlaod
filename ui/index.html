@@ -47,15 +47,62 @@
   import { h, Component, render } from 'https://unpkg.com/preact?module';
   import htm from 'https://unpkg.com/htm?module';
 
+  function useState (data){
+    return [data, function(_data){
+    }]
+  };
+
+  const [inProgress, setInProgress] = useState(false);
   // Initialize htm with Preact
   const html = htm.bind(h);
+  const download = (url, filename) => {
+    fetch(url)
+      .then(response => response.blob())
+      .then(blob => {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+      })
+      .catch(console.error);
+  }
+
+  const startDownload = async function () {
+    let tdResponse = await fetch('/startDownload')
+    const tdData = await tdResponse.json();
+    console.log(tdData)
+    localStorage.setItem("toDownload", tdData.id)
+
+    setInProgress(true);
+
+    let interval = setInterval(async () => {
+      const tdId = localStorage.getItem("toDownload")
+      let cdResponse = await fetch(`/checkDownload/${tdId}`)
+      let cdData = await cdResponse.json();
+      cdData = JSON.parse(cdData.data);
+      console.log(cdData)
+
+      if (cdData.isProcessed) {
+        clearInterval(interval);
+        setInProgress(false);
+        download(`http://localhost:8080/downloads/${cdData.fileName}`, cdData.fileName)
+      }
+    }, 1000);
+
+  }
+
+  const showLoader = function(){
+    if(inProgress){
+      return htm`<span class="link" > Downloading... </span>`
+    }
+  }
 
   function App(props) {
     return html`
     <div class="container">
-        <input type="button" class="bttn" value="Download" />
+        <input type="button" onClick=${startDownload} class="bttn" value="Download" />
         <br />
-        <span class="link" > Downloading... </span>
+        ${showLoader}
     </div>
       `;
   }
